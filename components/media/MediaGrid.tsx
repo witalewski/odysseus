@@ -19,12 +19,13 @@ interface MediaItem {
 }
 
 interface MediaGridProps {
+  locationId: string
   items: MediaItem[]
   onReorder: (items: MediaItem[]) => void
   onDelete: (mediaId: string) => void
 }
 
-export default function MediaGrid({ items, onReorder, onDelete }: MediaGridProps) {
+export default function MediaGrid({ locationId, items, onReorder, onDelete }: MediaGridProps) {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const handleDragEnd = (result: DropResult) => {
@@ -40,7 +41,7 @@ export default function MediaGrid({ items, onReorder, onDelete }: MediaGridProps
   const handleDelete = async (mediaId: string) => {
     setDeleting(mediaId)
     try {
-      await fetch(`/api/locations/${items[0]?.id ?? ""}/media`, {
+      await fetch(`/api/locations/${locationId}/media`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaId }),

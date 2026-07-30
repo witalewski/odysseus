@@ -228,7 +228,7 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
                 <img
                   src={currentLocation.media[currentSlide.mediaIndex].url}
                   alt={currentLocation.media[currentSlide.mediaIndex].caption ?? ""}
-                  className="max-h-full max-w-full object-contain"
+                  className="max-h-full max-w-full rounded-lg object-contain"
                 />
               </div>
             </>

@@ -202,6 +202,7 @@ export default function LocationList({
                       </div>
 
                       <MediaGrid
+                        locationId={location.id}
                         items={location.media}
                         onReorder={(items) => handleMediaReorder(location.id, items)}
                         onDelete={handleMediaDelete}
