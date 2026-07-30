@@ -11,6 +11,30 @@ interface MapLocation {
   name: string
 }
 
+type MapStyle = "street" | "satellite" | "hybrid"
+
+const TILE_STYLES: Record<MapStyle, { name: string; layers: Array<{ url: string; attribution: string }> }> = {
+  street: {
+    name: "Street",
+    layers: [
+      { url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "&copy; OpenStreetMap" },
+    ],
+  },
+  satellite: {
+    name: "Satellite",
+    layers: [
+      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution: "&copy; Esri" },
+    ],
+  },
+  hybrid: {
+    name: "Hybrid",
+    layers: [
+      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution: "&copy; Esri" },
+      { url: "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", attribution: "&copy; OpenStreetMap, &copy; CartoDB" },
+    ],
+  },
+}
+
 interface MapProps {
   center?: [number, number]
   zoom?: number
@@ -60,6 +84,9 @@ export default function Map({
   const circleRefs = useRef<L.CircleMarker[]>([])
   const labelRefs = useRef<L.Marker[]>([])
   const locationsDataRef = useRef<string>("")
+  const tileLayersRef = useRef<L.TileLayer[]>([])
+
+  const [mapStyle, setMapStyle] = useState<MapStyle>("street")
 
   const initialFitDone = useRef(false)
   const prevActiveRef = useRef(activeLocationIndex)
@@ -83,16 +110,18 @@ export default function Map({
       keyboard: false,
     })
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
-    }).addTo(map)
+    const config = TILE_STYLES.street
+    config.layers.forEach((layer) => {
+      const tl = L.tileLayer(layer.url, { attribution: layer.attribution }).addTo(map)
+      tileLayersRef.current.push(tl)
+    })
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       onMapClickRef.current?.(e.latlng.lat, e.latlng.lng)
     })
 
     map.on("contextmenu", (e: L.LeafletMouseEvent) => {
-      L.DomEvent.preventDefault(e)
+      e.originalEvent.preventDefault()
       onMapRightClickRef.current?.()
     })
 
@@ -103,6 +132,20 @@ export default function Map({
       mapRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    tileLayersRef.current.forEach((tl) => tl.remove())
+    tileLayersRef.current = []
+
+    const config = TILE_STYLES[mapStyle]
+    config.layers.forEach((layer) => {
+      const tl = L.tileLayer(layer.url, { attribution: layer.attribution }).addTo(map)
+      tileLayersRef.current.push(tl)
+    })
+  }, [mapStyle])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -363,5 +406,23 @@ export default function Map({
     fly()
   }, [activeLocationIndex, version])
 
-  return <div ref={containerRef} className={className} style={{ isolation: "isolate" }} />
+  return (
+    <div className={className} style={{ position: "relative", isolation: "isolate" }}>
+      <div ref={containerRef} className="absolute inset-0" />
+      <div className="absolute top-3 right-3 z-[10000] flex overflow-hidden rounded-md border border-black bg-white text-xs" onClick={(e) => e.stopPropagation()}>
+        {(Object.entries(TILE_STYLES) as [MapStyle, typeof TILE_STYLES[MapStyle]][]).map(([key, style]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={(e) => { e.nativeEvent.stopPropagation(); setMapStyle(key) }}
+            className={`px-2.5 py-1.5 font-[family-name:var(--font-serif)] font-semibold transition-colors ${
+              mapStyle === key ? "bg-black text-white" : "bg-white text-black hover:bg-zinc-100"
+            }`}
+          >
+            {style.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
