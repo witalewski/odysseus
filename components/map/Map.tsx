@@ -173,67 +173,101 @@ export default function Map({
     if (!map || !locs || locs.length === 0) return
     if (version === 0) return
 
-    const isFullMap = activeLocationIndex === -1
+    const targetIndex = activeLocationIndex
+    const isFullMap = targetIndex === -1
 
-    polylineRefs.current.forEach((pl, i) => {
-      const visited = !isFullMap && i < activeLocationIndex
-      pl.setStyle({
-        color: visited ? "#000000" : "#6b7280",
-        weight: visited ? 5 : 4,
-        opacity: visited ? 1 : 0.7,
-        dashArray: visited ? undefined : "8, 8",
+    const applyStyles = () => {
+      polylineRefs.current.forEach((pl, i) => {
+        const visited = !isFullMap && i < targetIndex
+        pl.setStyle({
+          color: visited ? "#000000" : "#6b7280",
+          weight: visited ? 5 : 4,
+          opacity: visited ? 1 : 0.7,
+          dashArray: visited ? undefined : "8, 8",
+        })
       })
-    })
 
-    circleRefs.current.forEach((cm, i) => {
-      const isActive = i === activeLocationIndex
+      circleRefs.current.forEach((cm, i) => {
+        const isActive = i === targetIndex
+        let fillColor: string
+        let radius: number
+        if (isFullMap) {
+          fillColor = "#6b7280"; radius = 6
+        } else if (isActive) {
+          fillColor = "#000000"; radius = 10
+        } else if (i < targetIndex) {
+          fillColor = "#000000"; radius = 8
+        } else {
+          fillColor = "#6b7280"; radius = 6
+        }
+        cm.setStyle({ fillColor, radius, fillOpacity: 1, opacity: 1 })
+      })
 
-      let fillColor: string
-      let radius: number
-      if (isFullMap) {
-        fillColor = "#6b7280"; radius = 6
-      } else if (isActive) {
-        fillColor = "#000000"; radius = 10
-      } else if (i < activeLocationIndex) {
-        fillColor = "#000000"; radius = 8
-      } else {
-        fillColor = "#6b7280"; radius = 6
-      }
-
-      cm.setStyle({ fillColor, radius })
-    })
-
-    labelRefs.current.forEach((lm, i) => {
-      const show = !isFullMap && i === activeLocationIndex
-      if (show && !map.hasLayer(lm)) {
-        lm.addTo(map)
-      } else if (!show && map.hasLayer(lm)) {
-        lm.remove()
-      }
-    })
-
-    let bounds: L.LatLngBounds | null = null
-    if (activeLocationIndex === -1) {
-      bounds = L.latLngBounds(locs.map((l) => [l.latitude, l.longitude] as [number, number]))
-    } else if (activeLocationIndex === 0) {
-      map.flyTo([locs[0].latitude, locs[0].longitude], 12, { duration: 1.5 })
-    } else {
-      const from = activeLocationIndex - 1
-      const to = activeLocationIndex
-      const pts: [number, number][] = []
-      for (let i = from; i <= to; i++) {
-        pts.push([locs[i].latitude, locs[i].longitude])
-      }
-      bounds = L.latLngBounds(pts)
+      labelRefs.current.forEach((lm, i) => {
+        const show = !isFullMap && i === targetIndex
+        if (show && !map.hasLayer(lm)) {
+          lm.addTo(map)
+        } else if (!show && map.hasLayer(lm)) {
+          lm.remove()
+        }
+      })
     }
 
-    if (bounds) {
-      if (!initialFitDone.current) {
-        initialFitDone.current = true
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: false })
-      } else {
-        map.flyToBounds(bounds, { padding: [60, 60], duration: 1.5, maxZoom: 15 })
+    const computeBounds = () => {
+      if (isFullMap) {
+        return L.latLngBounds(locs.map((l) => [l.latitude, l.longitude] as [number, number]))
       }
+      if (targetIndex === 0) return null
+
+      const pts: [number, number][] = []
+      for (let i = targetIndex - 1; i <= targetIndex; i++) {
+        pts.push([locs[i].latitude, locs[i].longitude])
+      }
+      return L.latLngBounds(pts)
+    }
+
+    const fly = () => {
+      if (locs.length === 1) {
+        map.flyTo([locs[0].latitude, locs[0].longitude], 12, { duration: 1.5 })
+        return
+      }
+      if (targetIndex === 0) {
+        map.flyTo([locs[0].latitude, locs[0].longitude], 12, { duration: 1.5 })
+        return
+      }
+      const bounds = computeBounds()
+      if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 1.5, maxZoom: 15 })
+    }
+
+    const jump = () => {
+      if (locs.length === 1) {
+        map.setView([locs[0].latitude, locs[0].longitude], 12)
+        return
+      }
+      if (targetIndex === 0) {
+        map.setView([locs[0].latitude, locs[0].longitude], 12)
+        return
+      }
+      const bounds = computeBounds()
+      if (bounds) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: false })
+    }
+
+    if (!initialFitDone.current) {
+      initialFitDone.current = true
+      applyStyles()
+      jump()
+    } else {
+      if (!isFullMap) {
+        labelRefs.current.forEach((lm, i) => {
+          if (i === targetIndex && !map.hasLayer(lm)) {
+            lm.addTo(map)
+          }
+        })
+      }
+      polylineRefs.current.forEach((pl) => pl.setStyle({ opacity: 0 }))
+      circleRefs.current.forEach((cm) => cm.setStyle({ fillOpacity: 0, opacity: 0 }))
+      map.once("moveend", applyStyles)
+      fly()
     }
   }, [activeLocationIndex, version])
 
