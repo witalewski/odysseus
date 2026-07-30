@@ -187,24 +187,6 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
           className="h-full w-full"
         />
 
-        {currentSlide.type === "location-map" && currentLocation && (
-          <div className="absolute bottom-4 left-4 right-4 rounded-lg bg-black/60 px-4 py-2 backdrop-blur sm:right-auto">
-            <h2 className="text-lg font-semibold text-white">
-              {currentLocation.name}
-            </h2>
-            {currentLocation.description && (
-              <p className="text-sm text-zinc-300">{currentLocation.description}</p>
-            )}
-          </div>
-        )}
-
-        {currentSlide.type === "full-map" && (
-          <div className="absolute bottom-4 left-4 rounded-lg bg-black/60 px-4 py-2 backdrop-blur">
-            <h2 className="text-lg font-semibold text-white">
-              {isVirtualStart ? "Full Journey" : "Journey Complete"}
-            </h2>
-          </div>
-        )}
       </div>
 
       {currentSlide.type === "location-media" && currentLocation && (
