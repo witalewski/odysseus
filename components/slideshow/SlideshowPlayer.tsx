@@ -21,6 +21,7 @@ interface Location {
 
 interface SlideshowPlayerProps {
   locations: Location[]
+  journeyTitle: string
   onClose: () => void
 }
 
@@ -43,7 +44,7 @@ function buildSlides(locations: Location[]): Slide[] {
   return slides
 }
 
-export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerProps) {
+export default function SlideshowPlayer({ locations, journeyTitle, onClose }: SlideshowPlayerProps) {
   const slides = useMemo(() => buildSlides(locations), [locations])
   const [slideIndex, setSlideIndex] = useState(0)
   const slideIndexRef = useRef(slideIndex)
@@ -156,10 +157,32 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
-      <div className="absolute top-4 right-4 z-10">
-        <Button variant="ghost" size="icon" className="text-white" onClick={handleCloseOrBack}>
-          <X className="h-6 w-6" />
-        </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`absolute top-4 right-4 z-20 ${isMapSlide ? "text-black" : "text-white"}`}
+        onClick={handleCloseOrBack}
+      >
+        <X className="h-6 w-6" />
+      </Button>
+
+      <div
+        className={`absolute inset-0 flex flex-col bg-white transition-opacity duration-500 ${!isMapSlide ? "pointer-events-none opacity-0" : ""}`}
+      >
+        <div className="flex h-16 shrink-0 items-center justify-center px-6">
+          <h1 className="font-[family-name:var(--font-serif)] text-2xl font-semibold tracking-tight text-black">
+            {journeyTitle}
+          </h1>
+        </div>
+        <div className="flex-1 px-3 pb-3">
+          <MapWrapper
+            locations={mapLocations}
+            activeLocationIndex={mapActiveIndex}
+            onLabelClick={handleLabelClick}
+            onDotClick={handleDotClick}
+            className="h-full w-full rounded-lg border border-black"
+          />
+        </div>
       </div>
 
       <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2">
@@ -174,19 +197,6 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
             <ChevronRight className="h-6 w-6" />
           </Button>
         </div>
-      </div>
-
-      <div
-        className={`absolute inset-0 transition-opacity duration-500 ${!isMapSlide ? "pointer-events-none opacity-0" : ""}`}
-      >
-        <MapWrapper
-          locations={mapLocations}
-          activeLocationIndex={mapActiveIndex}
-          onLabelClick={handleLabelClick}
-          onDotClick={handleDotClick}
-          className="h-full w-full"
-        />
-
       </div>
 
       {currentSlide.type === "location-media" && currentLocation && (

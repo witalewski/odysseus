@@ -143,6 +143,7 @@ export default function JourneyPage() {
             latitude: Number(loc.latitude),
             longitude: Number(loc.longitude),
           }))}
+          journeyTitle={journey.title}
           onClose={() => setShowSlideshow(false)}
         />
       )}

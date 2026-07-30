@@ -157,7 +157,7 @@ export default function Map({
 
       const icon = L.divIcon({
         className: "",
-        html: `<span style="background:white;border:1px solid #000;border-radius:6px;padding:8px 14px;font-family:var(--font-serif);font-size:16px;font-weight:500;color:#000;white-space:nowrap;">${loc.name}</span>`,
+        html: `<span style="background:white;border:1px solid #000;border-radius:6px;padding:8px 14px;font-family:var(--font-serif);font-size:16px;font-weight:600;color:#000;white-space:nowrap;">${loc.name}</span>`,
         iconAnchor: [-18, 14],
       })
       const lm = L.marker([loc.latitude, loc.longitude], { icon }).addTo(map)
