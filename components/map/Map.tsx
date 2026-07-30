@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
@@ -114,14 +114,14 @@ export default function Map({
     })
   }, [flyTo, locations])
 
-  const overlayCreated = useRef(false)
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !locations || locations.length === 0) return
 
     const dataKey = locations.map((l) => l.id).join(",")
-    if (dataKey === locationsDataRef.current && overlayCreated.current) return
+    if (dataKey === locationsDataRef.current && version > 0) return
     locationsDataRef.current = dataKey
 
     polylineRefs.current.forEach((p) => p.remove())
@@ -160,14 +160,14 @@ export default function Map({
       labelRefs.current.push(lm)
     })
 
-    overlayCreated.current = true
+    setVersion((v) => v + 1)
   }, [locations])
 
   useEffect(() => {
     const map = mapRef.current
     const locs = locationsRef.current
     if (!map || !locs || locs.length === 0) return
-    if (!overlayCreated.current) return
+    if (version === 0) return
 
     const isFullMap = activeLocationIndex === -1
 
@@ -198,12 +198,6 @@ export default function Map({
 
       cm.setStyle({ fillColor, radius })
     })
-  }, [activeLocationIndex])
-
-  useEffect(() => {
-    const map = mapRef.current
-    const locs = locationsRef.current
-    if (!map || !locs || locs.length === 0) return
 
     if (locs.length === 1) {
       map.flyTo([locs[0].latitude, locs[0].longitude], 12, { duration: 1.5 })
@@ -231,7 +225,7 @@ export default function Map({
     } else {
       map.flyToBounds(bounds, { padding: [60, 60], duration: 1.5, maxZoom: 15 })
     }
-  }, [activeLocationIndex])
+  }, [activeLocationIndex, version])
 
   return <div ref={containerRef} className={className} style={{ isolation: "isolate" }} />
 }
