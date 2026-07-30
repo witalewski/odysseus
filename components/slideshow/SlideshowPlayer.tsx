@@ -160,7 +160,7 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
       <Button
         variant="ghost"
         size="icon"
-        className={`absolute top-4 right-4 z-20 ${isMapSlide ? "text-black" : "text-white"}`}
+        className={`absolute top-4 right-4 z-20 focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`}
         onClick={handleCloseOrBack}
       >
         <X className="h-6 w-6" />
@@ -186,14 +186,18 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
       </div>
 
       <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2">
-        <div className="flex items-center gap-4 rounded-full bg-white/10 px-4 py-2 backdrop-blur">
-          <Button variant="ghost" size="icon" className="text-white" onClick={goBack}>
+        <div
+          className={`flex items-center gap-4 rounded-full px-4 py-2 ${isMapSlide ? "border border-black bg-white" : "bg-white/10 backdrop-blur"}`}
+        >
+          <Button variant="ghost" size="icon" className={`focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`} onClick={goBack}>
             <ChevronLeft className="h-6 w-6" />
           </Button>
-          <span className="min-w-[100px] text-center text-sm text-white">
+          <span
+            className={`min-w-[120px] text-center text-base font-[family-name:var(--font-serif)] ${isMapSlide ? "text-black" : "text-white"}`}
+          >
             {currentSlideNum} / {totalSlides}
           </span>
-          <Button variant="ghost" size="icon" className="text-white" onClick={advance}>
+          <Button variant="ghost" size="icon" className={`focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`} onClick={advance}>
             <ChevronRight className="h-6 w-6" />
           </Button>
         </div>

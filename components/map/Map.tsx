@@ -76,6 +76,7 @@ export default function Map({
       center,
       zoom,
       zoomControl: true,
+      keyboard: false,
     })
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
