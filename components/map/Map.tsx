@@ -407,7 +407,7 @@ export default function Map({
   }, [activeLocationIndex, version])
 
   return (
-    <div className={className} style={{ position: "relative", isolation: "isolate" }}>
+    <div className={`${className} overflow-hidden`} style={{ position: "relative", isolation: "isolate" }}>
       <div ref={containerRef} className="absolute inset-0" />
       <div className="absolute top-3 right-3 z-[10000] flex overflow-hidden rounded-md border border-black bg-white text-xs" onClick={(e) => e.stopPropagation()}>
         {(Object.entries(TILE_STYLES) as [MapStyle, typeof TILE_STYLES[MapStyle]][]).map(([key, style]) => (
