@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import MapWrapper from "@/components/map/MapWrapper"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, X } from "lucide-react"
 
 interface Location {
   id: string
@@ -204,8 +204,8 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
             {currentSlideNum} / {totalSlides}
           </span>
           {isVirtualEnd ? (
-            <Button variant="ghost" className={`focus-visible:ring-0 font-[family-name:var(--font-serif)] text-base font-semibold ${isMapSlide ? "text-black" : "text-white"}`} onClick={restart}>
-              Restart
+            <Button variant="ghost" size="icon" className={`focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`} onClick={restart}>
+              <RotateCcw className="h-6 w-6" />
             </Button>
           ) : (
             <Button variant="ghost" size="icon" className={`focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`} onClick={advance}>
