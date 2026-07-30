@@ -61,6 +61,10 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
     setSlideIndex((i) => Math.min(i + 1, slides.length - 1))
   }, [slides.length])
 
+  const restart = useCallback(() => {
+    setSlideIndex(0)
+  }, [])
+
   const goBack = useCallback(() => {
     setSlideIndex((i) => Math.max(i - 1, 0))
   }, [])
@@ -199,9 +203,15 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
           >
             {currentSlideNum} / {totalSlides}
           </span>
-          <Button variant="ghost" size="icon" className={`focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`} onClick={advance}>
-            <ChevronRight className="h-6 w-6" />
-          </Button>
+          {isVirtualEnd ? (
+            <Button variant="ghost" className={`focus-visible:ring-0 font-[family-name:var(--font-serif)] text-base font-semibold ${isMapSlide ? "text-black" : "text-white"}`} onClick={restart}>
+              Restart
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" className={`focus-visible:ring-0 ${isMapSlide ? "text-black" : "text-white"}`} onClick={advance}>
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          )}
         </div>
       </div>
 
