@@ -17,6 +17,7 @@ interface MapProps {
   markers?: Array<MapLocation>
   flyTo?: [number, number] | null
   onMapClick?: (lat: number, lng: number) => void
+  onMapRightClick?: () => void
   onLabelClick?: (locationIndex: number) => void
   onDotClick?: (locationIndex: number) => void
   className?: string
@@ -40,6 +41,7 @@ export default function Map({
   markers = [],
   flyTo,
   onMapClick,
+  onMapRightClick,
   onLabelClick,
   onDotClick,
   className = "h-80 w-full rounded-md",
@@ -50,6 +52,7 @@ export default function Map({
   const markersRef = useRef<L.Marker[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const onMapClickRef = useRef(onMapClick)
+  const onMapRightClickRef = useRef(onMapRightClick)
   const onLabelClickRef = useRef(onLabelClick)
   const onDotClickRef = useRef(onDotClick)
 
@@ -65,6 +68,7 @@ export default function Map({
 
   useEffect(() => {
     onMapClickRef.current = onMapClick
+    onMapRightClickRef.current = onMapRightClick
     onLabelClickRef.current = onLabelClick
     onDotClickRef.current = onDotClick
   })
@@ -85,6 +89,11 @@ export default function Map({
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       onMapClickRef.current?.(e.latlng.lat, e.latlng.lng)
+    })
+
+    map.on("contextmenu", (e: L.LeafletMouseEvent) => {
+      L.DomEvent.preventDefault(e)
+      onMapRightClickRef.current?.()
     })
 
     mapRef.current = map

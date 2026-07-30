@@ -178,6 +178,8 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
           <MapWrapper
             locations={mapLocations}
             activeLocationIndex={mapActiveIndex}
+            onMapClick={advance}
+            onMapRightClick={goBack}
             onLabelClick={handleLabelClick}
             onDotClick={handleDotClick}
             className="h-full w-full rounded-lg border border-black"
