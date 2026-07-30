@@ -59,6 +59,7 @@ export default function Map({
   const locationsDataRef = useRef<string>("")
 
   const initialFitDone = useRef(false)
+  const prevActiveRef = useRef(activeLocationIndex)
   const locationsRef = useRef(locations)
   locationsRef.current = locations
 
@@ -174,19 +175,11 @@ export default function Map({
     if (version === 0) return
 
     const targetIndex = activeLocationIndex
+    const prevIndex = prevActiveRef.current
+    prevActiveRef.current = targetIndex
     const isFullMap = targetIndex === -1
 
-    const applyStyles = () => {
-      polylineRefs.current.forEach((pl, i) => {
-        const visited = !isFullMap && i < targetIndex
-        pl.setStyle({
-          color: visited ? "#000000" : "#6b7280",
-          weight: visited ? 5 : 4,
-          opacity: visited ? 1 : 0.7,
-          dashArray: visited ? undefined : "8, 8",
-        })
-      })
-
+    const updateDotsAndLabels = () => {
       circleRefs.current.forEach((cm, i) => {
         const isActive = i === targetIndex
         let fillColor: string
@@ -211,6 +204,19 @@ export default function Map({
           lm.remove()
         }
       })
+    }
+
+    const applyStyles = () => {
+      polylineRefs.current.forEach((pl, i) => {
+        const visited = !isFullMap && i < targetIndex
+        pl.setStyle({
+          color: visited ? "#000000" : "#6b7280",
+          weight: visited ? 5 : 4,
+          opacity: visited ? 1 : 0.7,
+          dashArray: visited ? undefined : "8, 8",
+        })
+      })
+      updateDotsAndLabels()
     }
 
     const computeBounds = () => {
@@ -256,19 +262,95 @@ export default function Map({
       initialFitDone.current = true
       applyStyles()
       jump()
-    } else {
-      if (!isFullMap) {
-        labelRefs.current.forEach((lm, i) => {
-          if (i === targetIndex && !map.hasLayer(lm)) {
-            lm.addTo(map)
-          }
+      return
+    }
+
+    if (!isFullMap) {
+      labelRefs.current.forEach((lm, i) => {
+        if (i === targetIndex && !map.hasLayer(lm)) {
+          lm.addTo(map)
+        }
+      })
+    }
+    polylineRefs.current.forEach((pl) => pl.setStyle({ opacity: 0 }))
+    circleRefs.current.forEach((cm) => cm.setStyle({ fillOpacity: 0, opacity: 0 }))
+
+    map.once("moveend", () => {
+      updateDotsAndLabels()
+
+      const shouldAnimate = locs.length > 1 && targetIndex > 0 && prevIndex >= 0
+      if (!shouldAnimate) {
+        applyStyles()
+        return
+      }
+
+      const goingForward = targetIndex > prevIndex
+      const segIndex = goingForward ? targetIndex - 1 : targetIndex
+
+      polylineRefs.current.forEach((pl, i) => {
+        const before = i < segIndex
+        const after = i > segIndex
+        if (goingForward && before) {
+          pl.setStyle({ color: "#000000", weight: 5, opacity: 1, dashArray: undefined })
+        } else if (!goingForward && after) {
+          pl.setStyle({ color: "#6b7280", weight: 4, opacity: 0.7, dashArray: "8, 8" })
+        } else {
+          pl.setStyle({ opacity: 0 })
+        }
+      })
+
+      const animPl = polylineRefs.current[segIndex]
+      if (!animPl) { applyStyles(); return }
+
+      const fromLatLng: [number, number] = goingForward
+        ? [locs[segIndex].latitude, locs[segIndex].longitude]
+        : [locs[segIndex + 1].latitude, locs[segIndex + 1].longitude]
+      const toLatLng: [number, number] = goingForward
+        ? [locs[segIndex + 1].latitude, locs[segIndex + 1].longitude]
+        : [locs[segIndex].latitude, locs[segIndex].longitude]
+
+      const p1 = map.latLngToLayerPoint(fromLatLng)
+      const p2 = map.latLngToLayerPoint(toLatLng)
+      const lineLen = Math.max(p1.distanceTo(p2), 1)
+
+      if (goingForward) {
+        animPl.setStyle({
+          color: "#000000", weight: 5, opacity: 1,
+          dashArray: `${lineLen}`, dashOffset: `${lineLen}`,
+        })
+      } else {
+        animPl.setStyle({
+          color: "#6b7280", weight: 4, opacity: 0.7,
+          dashArray: `${lineLen}`, dashOffset: `${lineLen}`,
         })
       }
-      polylineRefs.current.forEach((pl) => pl.setStyle({ opacity: 0 }))
-      circleRefs.current.forEach((cm) => cm.setStyle({ fillOpacity: 0, opacity: 0 }))
-      map.once("moveend", applyStyles)
-      fly()
-    }
+
+      const duration = 400
+      const startTime = performance.now()
+      ;(function frame(time: number) {
+        const t = Math.min((time - startTime) / duration, 1)
+        animPl.setStyle({ dashOffset: `${lineLen * (1 - t)}` })
+
+        if (t < 1) {
+          requestAnimationFrame(frame)
+        } else {
+          animPl.setStyle({
+            dashArray: goingForward ? undefined : "8, 8",
+            dashOffset: undefined,
+          })
+
+          polylineRefs.current.forEach((pl, i) => {
+            if (goingForward && i > segIndex) {
+              pl.setStyle({ color: "#6b7280", weight: 4, opacity: 0.7, dashArray: "8, 8" })
+            } else if (!goingForward && i < segIndex) {
+              pl.setStyle({ color: "#000000", weight: 5, opacity: 1, dashArray: undefined })
+            }
+          })
+        }
+      })(performance.now())
+    })
+
+    fly()
   }, [activeLocationIndex, version])
 
   return <div ref={containerRef} className={className} style={{ isolation: "isolate" }} />
