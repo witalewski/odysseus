@@ -81,6 +81,16 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
     }
   }, [])
 
+  const handleDotClick = useCallback((locationIndex: number) => {
+    const allSlides = slidesRef.current
+    const mapSlideIdx = allSlides.findIndex(
+      (s) => s.type === "location-map" && s.locationIndex === locationIndex,
+    )
+    if (mapSlideIdx >= 0) {
+      setSlideIndex(mapSlideIdx)
+    }
+  }, [])
+
   const handleCloseOrBack = useCallback(() => {
     const idx = slideIndexRef.current
     const allSlides = slidesRef.current
@@ -173,6 +183,7 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
           locations={mapLocations}
           activeLocationIndex={mapActiveIndex}
           onLabelClick={handleLabelClick}
+          onDotClick={handleDotClick}
           className="h-full w-full"
         />
 

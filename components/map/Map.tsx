@@ -18,6 +18,7 @@ interface MapProps {
   flyTo?: [number, number] | null
   onMapClick?: (lat: number, lng: number) => void
   onLabelClick?: (locationIndex: number) => void
+  onDotClick?: (locationIndex: number) => void
   className?: string
   locations?: MapLocation[]
   activeLocationIndex?: number
@@ -33,12 +34,6 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41],
 })
 
-const LABEL_HTML =
-  `<span style="background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);` +
-  `padding:3px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);` +
-  `font-size:14px;font-weight:600;color:white;` +
-  `font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;white-space:nowrap;">`
-
 export default function Map({
   center = [20, 0],
   zoom = 2,
@@ -46,6 +41,7 @@ export default function Map({
   flyTo,
   onMapClick,
   onLabelClick,
+  onDotClick,
   className = "h-80 w-full rounded-md",
   locations,
   activeLocationIndex = -1,
@@ -55,6 +51,7 @@ export default function Map({
   const containerRef = useRef<HTMLDivElement>(null)
   const onMapClickRef = useRef(onMapClick)
   const onLabelClickRef = useRef(onLabelClick)
+  const onDotClickRef = useRef(onDotClick)
 
   const polylineRefs = useRef<L.Polyline[]>([])
   const circleRefs = useRef<L.CircleMarker[]>([])
@@ -68,6 +65,7 @@ export default function Map({
   useEffect(() => {
     onMapClickRef.current = onMapClick
     onLabelClickRef.current = onLabelClick
+    onDotClickRef.current = onDotClick
   })
 
   useEffect(() => {
@@ -140,7 +138,7 @@ export default function Map({
       const to = locations[i + 1]
       const pl = L.polyline(
         [[from.latitude, from.longitude], [to.latitude, to.longitude]],
-        { color: "#cbd5e1", weight: 4, opacity: 0.7, dashArray: "8, 8", lineCap: "round", lineJoin: "round" },
+        { color: "#6b7280", weight: 4, opacity: 0.7, dashArray: "8, 8", lineCap: "round", lineJoin: "round" },
       ).addTo(map)
       polylineRefs.current.push(pl)
     }
@@ -149,16 +147,17 @@ export default function Map({
       const cm = L.circleMarker([loc.latitude, loc.longitude], {
         radius: 6,
         color: "#fff",
-        fillColor: "#cbd5e1",
+        fillColor: "#6b7280",
         fillOpacity: 1,
         weight: 3,
       }).addTo(map)
+      cm.on("click", () => onDotClickRef.current?.(i))
       circleRefs.current.push(cm)
 
       const icon = L.divIcon({
         className: "",
-        html: `${LABEL_HTML}${loc.name}</span>`,
-        iconAnchor: [0, 14],
+        html: `<span style="background:white;border:1px solid #000;border-radius:6px;padding:8px 14px;font-family:var(--font-serif);font-size:16px;font-weight:500;color:#000;white-space:nowrap;">${loc.name}</span>`,
+        iconAnchor: [-18, 14],
       })
       const lm = L.marker([loc.latitude, loc.longitude], { icon }).addTo(map)
       lm.on("click", () => onLabelClickRef.current?.(i))
@@ -179,7 +178,7 @@ export default function Map({
     polylineRefs.current.forEach((pl, i) => {
       const visited = !isFullMap && i < activeLocationIndex
       pl.setStyle({
-        color: visited ? "#3b82f6" : "#cbd5e1",
+        color: visited ? "#000000" : "#6b7280",
         weight: visited ? 5 : 4,
         opacity: visited ? 1 : 0.7,
         dashArray: visited ? undefined : "8, 8",
@@ -192,31 +191,35 @@ export default function Map({
       let fillColor: string
       let radius: number
       if (isFullMap) {
-        fillColor = "#cbd5e1"; radius = 6
+        fillColor = "#6b7280"; radius = 6
       } else if (isActive) {
-        fillColor = "#2563eb"; radius = 10
+        fillColor = "#000000"; radius = 10
       } else if (i < activeLocationIndex) {
-        fillColor = "#3b82f6"; radius = 8
+        fillColor = "#000000"; radius = 8
       } else {
-        fillColor = "#cbd5e1"; radius = 6
+        fillColor = "#6b7280"; radius = 6
       }
 
       cm.setStyle({ fillColor, radius })
     })
 
-    if (locs.length === 1) {
-      map.flyTo([locs[0].latitude, locs[0].longitude], 12, { duration: 1.5 })
-      return
-    }
+    labelRefs.current.forEach((lm, i) => {
+      const show = !isFullMap && i === activeLocationIndex
+      if (show && !map.hasLayer(lm)) {
+        lm.addTo(map)
+      } else if (!show && map.hasLayer(lm)) {
+        lm.remove()
+      }
+    })
 
-    let bounds: L.LatLngBounds
+    let bounds: L.LatLngBounds | null = null
     if (activeLocationIndex === -1) {
       bounds = L.latLngBounds(locs.map((l) => [l.latitude, l.longitude] as [number, number]))
+    } else if (activeLocationIndex === 0) {
+      map.flyTo([locs[0].latitude, locs[0].longitude], 12, { duration: 1.5 })
     } else {
-      const from = activeLocationIndex === 0 ? 0 : activeLocationIndex - 1
-      const to = activeLocationIndex === 0
-        ? Math.min(1, locs.length - 1)
-        : activeLocationIndex
+      const from = activeLocationIndex - 1
+      const to = activeLocationIndex
       const pts: [number, number][] = []
       for (let i = from; i <= to; i++) {
         pts.push([locs[i].latitude, locs[i].longitude])
@@ -224,11 +227,13 @@ export default function Map({
       bounds = L.latLngBounds(pts)
     }
 
-    if (!initialFitDone.current) {
-      initialFitDone.current = true
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: false })
-    } else {
-      map.flyToBounds(bounds, { padding: [60, 60], duration: 1.5, maxZoom: 15 })
+    if (bounds) {
+      if (!initialFitDone.current) {
+        initialFitDone.current = true
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: false })
+      } else {
+        map.flyToBounds(bounds, { padding: [60, 60], duration: 1.5, maxZoom: 15 })
+      }
     }
   }, [activeLocationIndex, version])
 
