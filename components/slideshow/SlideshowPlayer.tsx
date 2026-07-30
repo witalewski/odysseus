@@ -206,7 +206,7 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
       </div>
 
       {currentSlide.type === "location-media" && currentLocation && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" onClick={advance} onContextMenu={(e) => { e.preventDefault(); goBack() }}>
           {currentLocation.media[currentSlide.mediaIndex]?.type === "photo" ? (
             <>
               <img
@@ -229,6 +229,8 @@ export default function SlideshowPlayer({ locations, journeyTitle, onClose }: Sl
                 controls
                 autoPlay
                 className="max-h-full max-w-full"
+                onClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => e.stopPropagation()}
               />
             </div>
           )}
