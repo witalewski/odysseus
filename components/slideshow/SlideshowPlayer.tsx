@@ -64,6 +64,23 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
     setSlideIndex((i) => Math.max(i - 1, 0))
   }, [])
 
+  const handleLabelClick = useCallback((locationIndex: number) => {
+    const allSlides = slidesRef.current
+    const mediaSlideIdx = allSlides.findIndex(
+      (s) => s.type === "location-media" && s.locationIndex === locationIndex && s.mediaIndex === 0,
+    )
+    if (mediaSlideIdx >= 0) {
+      setSlideIndex(mediaSlideIdx)
+      return
+    }
+    const mapSlideIdx = allSlides.findIndex(
+      (s) => s.type === "location-map" && s.locationIndex === locationIndex,
+    )
+    if (mapSlideIdx >= 0) {
+      setSlideIndex(mapSlideIdx)
+    }
+  }, [])
+
   const handleCloseOrBack = useCallback(() => {
     const idx = slideIndexRef.current
     const allSlides = slidesRef.current
@@ -155,6 +172,7 @@ export default function SlideshowPlayer({ locations, onClose }: SlideshowPlayerP
         <MapWrapper
           locations={mapLocations}
           activeLocationIndex={mapActiveIndex}
+          onLabelClick={handleLabelClick}
           className="h-full w-full"
         />
 

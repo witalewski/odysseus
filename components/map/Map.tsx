@@ -17,6 +17,7 @@ interface MapProps {
   markers?: Array<MapLocation>
   flyTo?: [number, number] | null
   onMapClick?: (lat: number, lng: number) => void
+  onLabelClick?: (locationIndex: number) => void
   className?: string
   locations?: MapLocation[]
   activeLocationIndex?: number
@@ -44,6 +45,7 @@ export default function Map({
   markers = [],
   flyTo,
   onMapClick,
+  onLabelClick,
   className = "h-80 w-full rounded-md",
   locations,
   activeLocationIndex = -1,
@@ -52,6 +54,7 @@ export default function Map({
   const markersRef = useRef<L.Marker[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const onMapClickRef = useRef(onMapClick)
+  const onLabelClickRef = useRef(onLabelClick)
 
   const polylineRefs = useRef<L.Polyline[]>([])
   const circleRefs = useRef<L.CircleMarker[]>([])
@@ -64,6 +67,7 @@ export default function Map({
 
   useEffect(() => {
     onMapClickRef.current = onMapClick
+    onLabelClickRef.current = onLabelClick
   })
 
   useEffect(() => {
@@ -141,7 +145,7 @@ export default function Map({
       polylineRefs.current.push(pl)
     }
 
-    locations.forEach((loc) => {
+    locations.forEach((loc, i) => {
       const cm = L.circleMarker([loc.latitude, loc.longitude], {
         radius: 6,
         color: "#fff",
@@ -157,6 +161,7 @@ export default function Map({
         iconAnchor: [0, 14],
       })
       const lm = L.marker([loc.latitude, loc.longitude], { icon }).addTo(map)
+      lm.on("click", () => onLabelClickRef.current?.(i))
       labelRefs.current.push(lm)
     })
 
